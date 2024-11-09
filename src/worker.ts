@@ -1,53 +1,25 @@
+import { createPlugin } from "../dist";
+import { Manifest } from "../dist";
 import manifest from "../manifest.json";
-import { validateAndDecodeSchemas } from "./helpers/validator";
-import { plugin } from "./plugin";
-import { Env } from "./types";
+import { helloWorld } from "./handlers/hello-world";
+import { envSchema, pluginSettingsSchema } from "./types";
+import dotenv from "dotenv";
+dotenv.config();
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    try {
-      const url = new URL(request.url);
-      if (url.pathname === "/manifest") {
-        if (request.method === "GET") {
-          return new Response(JSON.stringify(manifest), {
-            headers: { "content-type": "application/json" },
-          });
-        } else if (request.method === "POST") {
-          const webhookPayload = await request.json();
+const pk = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuHo/GFIOeSAVD1bucfJY
+81sRU5PtrDXcjM+JgZNRGvaNzkqMB+IfqwkA8op3ENZ69lw4CXmZ/r5Z0k2KmZX9
+H0UovxZr/LdFi5Es28lKOF1cVRyXHGGF1dbP3TbAzktUoqUQTLxfRKHTaszRUCEN
+CDIXvJ5irha/9EDwXz/pahFQ7DmvwGevF3TgJNtmkpXcR35lF1sjl59TZQFiRR93
+5a7hS+x3qsmALh+rtjzx6qz/Ahi7rJmIbuXADsga5epr0VpSBbg5dENRoMl9Z0NC
+1qNYIwb/obKuE36RGQ1L1MkO9/E385v7x4eWA1BMpChFXhf6jxCa+w4t7YLxMQhm
+3QIDAQAB
+-----END PUBLIC KEY-----`;
 
-          validateAndDecodeSchemas(env, webhookPayload.settings);
-          return new Response(JSON.stringify({ message: "Schema is valid" }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-      }
-      if (request.method !== "POST") {
-        return new Response(JSON.stringify({ error: `Only POST requests are supported.` }), {
-          status: 405,
-          headers: { "content-type": "application/json", Allow: "POST" },
-        });
-      }
-      const contentType = request.headers.get("content-type");
-      if (contentType !== "application/json") {
-        return new Response(JSON.stringify({ error: `Error: ${contentType} is not a valid content type` }), {
-          status: 400,
-          headers: { "content-type": "application/json" },
-        });
-      }
-
-      const webhookPayload = await request.json();
-      const { decodedSettings, decodedEnv } = validateAndDecodeSchemas(env, webhookPayload.settings);
-
-      webhookPayload.env = decodedEnv;
-      webhookPayload.settings = decodedSettings;
-      await plugin(webhookPayload, decodedEnv);
-      return new Response(JSON.stringify("OK"), { status: 200, headers: { "content-type": "application/json" } });
-    } catch (error) {
-      return handleUncaughtError(error);
-    }
-  },
-};
-
-function handleUncaughtError(error: unknown) {
-  console.error(error);
-  const status = 500;
-  return new Response(JSON.stringify({ error }), { status: status, headers: { "content-type": "application/json" } });
-}
+export default createPlugin(helloWorld, manifest as Manifest, {
+  kernelPublicKey: pk,
+  logLevel: "debug",
+  postCommentOnError: true,
+  envSchema: envSchema,
+  settingsSchema: pluginSettingsSchema,
+});

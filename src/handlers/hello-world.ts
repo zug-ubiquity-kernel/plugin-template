@@ -1,16 +1,7 @@
-import { Context } from "../types";
+import { Context } from "../../dist";
+import { Env, PluginSettings } from "../types";
 
-/**
- * NOTICE: Remove this file or use it as a template for your own plugins.
- *
- * This encapsulates the logic for a plugin if the only thing it does is say "Hello, world!".
- *
- * Try it out by running your local kernel worker and running the `yarn worker` command.
- * Comment on an issue in a repository where your GitHub App is installed and see the magic happen!
- *
- * Logger examples are provided to show how to log different types of data.
- */
-export async function helloWorld(context: Context) {
+export async function helloWorld(context: Context<PluginSettings, Env, "issue_comment.created">) {
   const {
     logger,
     payload,
@@ -33,7 +24,7 @@ export async function helloWorld(context: Context) {
   logger.debug(`Executing helloWorld:`, { sender, repo, issueNumber, owner });
 
   try {
-    await octokit.issues.createComment({
+    await octokit.rest.issues.createComment({
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
       issue_number: payload.issue.number,
@@ -41,7 +32,7 @@ export async function helloWorld(context: Context) {
     });
     if (customStringsUrl) {
       const response = await fetch(customStringsUrl).then((value) => value.json());
-      await octokit.issues.createComment({
+      await octokit.rest.issues.createComment({
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
         issue_number: payload.issue.number,
@@ -65,4 +56,7 @@ export async function helloWorld(context: Context) {
 
   logger.ok(`Successfully created comment!`);
   logger.verbose(`Exiting helloWorld`);
+  return {
+    success: true,
+  };
 }

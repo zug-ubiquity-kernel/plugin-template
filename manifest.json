@@ -5,7 +5,7 @@
     "issue_comment.created"
   ],
   "commands": {
-    "command1": {
+    "hello": {
       "ubiquity:example": "/command1 argument",
       "description": "Command 1 with an argument."
     }
